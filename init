@@ -13,15 +13,23 @@ function fatal() {
 [ -z "${NOMAD_META_REMOTE_URL:-}" ] && fatal 400 "Missing required environment variable NOMAD_META_REMOTE_URL"
 [ -z "${NOMAD_META_REPO_NAME:-}" ]  && fatal 400 "Missing required environment variable NOMAD_META_REPO_NAME"
 
-mkdir "${NOMAD_META_REPO_NAME}"
-cd "${NOMAD_META_REPO_NAME}"
-
-set -x
-
 git --version
 git lfs --version
 git xet --version
 
-git init --bare
-git remote add origin "${NOMAD_META_REMOTE_URL}"
+[ -d "${NOMAD_META_REPO_NAME}" ] || mkdir "${NOMAD_META_REPO_NAME}"
+cd "${NOMAD_META_REPO_NAME}"
+
+[ $(git rev-parse --is-bare-repository) == "true" ] || git init --bare
+
+echo "[info] Checking remote"
+if git remote get-url origin; then
+    echo "[info] Setting remote URL to ${NOMAD_META_REMOTE_URL}"
+    git remote set-url origin "${NOMAD_META_REMOTE_URL}"
+else
+    echo "[info] Adding remote at ${NOMAD_META_REMOTE_URL}"
+    git remote add origin "${NOMAD_META_REMOTE_URL}"
+fi
+
+echo "[info] Fetching remote refs from ${NOMAD_META_REMOTE_URL}"
 git fetch origin

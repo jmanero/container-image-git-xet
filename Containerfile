@@ -19,3 +19,6 @@ RUN git xet install
 
 RUN mkdir -p /models
 WORKDIR /models
+
+ENV GIT_TERMINAL_PROMPT=0
+ENV GIT_LFS_FORCE_PROGRESS=1

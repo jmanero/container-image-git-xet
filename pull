@@ -15,16 +15,18 @@ function fatal() {
 
 cd "${NOMAD_META_REPO_NAME}"
 
-if [ -z "${NOMAD_META_HEAD:-}" ]; then
-    NOMAD_META_HEAD=$(git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|^origin/||')
-    echo "[info] Using remote ref origin/HEAD -> $NOMAD_META_HEAD"
+if [ -z "${NOMAD_META_REF:-}" ]; then
+    NOMAD_META_REF=$(git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|^origin/||')
+    echo "[info] Using remote ref origin/HEAD -> $NOMAD_META_REF"
 fi
-
-set -x
 
 git --version
 git lfs --version
 git xet --version
 
-git fetch origin "${NOMAD_META_HEAD}:${NOMAD_META_HEAD}"
-git lfs fetch origin "${NOMAD_META_HEAD}"
+echo "[info] Fetching diffs for ${NOMAD_META_REF} from remote"
+git fetch origin "${NOMAD_META_REF}:${NOMAD_META_REF}"
+git show "${NOMAD_META_REF}" --name-only
+
+echo "[info] Fetching LFS objects for ref ${NOMAD_META_REF}"
+git lfs fetch origin "${NOMAD_META_REF}"
