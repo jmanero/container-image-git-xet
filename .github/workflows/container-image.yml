@@ -44,8 +44,8 @@ jobs:
             --platform ${{ env.platforms }}\
             --label "org.label-schema.vcs-ref=${{ github.sha }}"\
             --label "org.label-schema.version=${{ env.major_version }}.${{ env.minor_version }}"\
-            --tag ghcr.io/jmanero/fulcrum:latest\
-            --tag ghcr.io/jmanero/fulcrum:${{ env.major_version }}\
-            --tag ghcr.io/jmanero/fulcrum:${{ env.major_version }}.${{ env.minor_version }}\
-            --tag ghcr.io/jmanero/fulcrum:${{ env.major_version }}.${{ env.minor_version }}-${{ github.sha }}\
+            --tag ghcr.io/jmanero/git-xet:latest\
+            --tag ghcr.io/jmanero/git-xet:${{ env.major_version }}\
+            --tag ghcr.io/jmanero/git-xet:${{ env.major_version }}.${{ env.minor_version }}\
+            --tag ghcr.io/jmanero/git-xet:${{ env.major_version }}.${{ env.minor_version }}-${{ github.sha }}\
             --file Containerfile .
