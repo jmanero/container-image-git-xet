@@ -1,0 +1,27 @@
+#!/usr/bin/bash
+set -eo pipefail
+
+## init - Setup a new local git repository with an origin remote
+##  - NOMAD_META_REMOTE_URL: Remote git repository URL
+##  - NOMAD_META_REPO_NAME: Local repository path
+
+function fatal() {
+    echo "[fatal $1] $2" >&2
+    exit $1
+}
+
+[ -z "${NOMAD_META_REMOTE_URL:-}" ] && fatal 400 "Missing required environment variable NOMAD_META_REMOTE_URL"
+[ -z "${NOMAD_META_REPO_NAME:-}" ]  && fatal 400 "Missing required environment variable NOMAD_META_REPO_NAME"
+
+mkdir "${NOMAD_META_REPO_NAME}"
+cd "${NOMAD_META_REPO_NAME}"
+
+set -x
+
+git --version
+git lfs --version
+git xet --version
+
+git init --bare
+git remote add origin "${NOMAD_META_REMOTE_URL}"
+git fetch origin

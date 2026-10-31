@@ -1,0 +1,30 @@
+#!/usr/bin/bash
+set -eo pipefail
+
+## pull - Fetch a remote ref to the local bare repository
+##  - NOMAD_META_REPO_NAME: Local repository path
+##  - NOMAD_META_HEAD [optional]: Reference to fetch into the local repository
+
+function fatal() {
+    echo "[fatal $1] $2" >&2
+    exit $1
+}
+
+[ -z "${NOMAD_META_REPO_NAME:-}" ] && fatal 400 "Missing required environment variable NOMAD_META_REPO_NAME"
+[ -d "${NOMAD_META_REPO_NAME}" ]   || fatal 404 "Repository at ${NOMAD_META_REPO_NAME} does not exist"
+
+cd "${NOMAD_META_REPO_NAME}"
+
+if [ -z "${NOMAD_META_HEAD:-}" ]; then
+    NOMAD_META_HEAD=$(git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|^origin/||')
+    echo "[info] Using remote ref origin/HEAD -> $NOMAD_META_HEAD"
+fi
+
+set -x
+
+git --version
+git lfs --version
+git xet --version
+
+git fetch origin "${NOMAD_META_HEAD}:${NOMAD_META_HEAD}"
+git lfs fetch origin "${NOMAD_META_HEAD}"
