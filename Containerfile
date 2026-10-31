@@ -2,7 +2,7 @@ FROM quay.io/fedora/fedora AS xet
 
 RUN dnf install --assumeyes unzip
 
-## Use RUN curl instead of ADD to expand uname -m. `ADD ...` does not run arguments through a shell 
+## Use RUN curl instead of ADD to expand uname -m. `ADD ...` does not run arguments through a shell
 RUN curl -sSL "https://github.com/huggingface/xet-core/releases/download/git-xet-v0.2.1/git-xet-linux-$(uname -m).zip" -o git-xet.zip
 RUN unzip git-xet.zip
 RUN chmod +x git-xet
@@ -22,3 +22,4 @@ WORKDIR /models
 
 ENV GIT_TERMINAL_PROMPT=0
 ENV GIT_LFS_FORCE_PROGRESS=1
+ENV HF_XET_CACHE=/models/.xet-cache
