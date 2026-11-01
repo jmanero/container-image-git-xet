@@ -3,11 +3,25 @@ set -eo pipefail
 
 ## pull - Fetch a remote ref to the local bare repository
 ##  - NOMAD_META_REPO_NAME: Local repository path
-##  - NOMAD_META_HEAD [optional]: Reference to fetch into the local repository
+##  - NOMAD_META_REF  [optional]: Reference to fetch into the local repository
 
 function fatal() {
     echo "[fatal $1] $2" >&2
     exit $1
+}
+
+function progress() {
+    progress_file="$1"
+
+    truncate -s 0 "$progress_file"
+    trap 'rm -f -- "$progress_file"' EXIT
+
+    ## Periodically tail and truncate the progress file
+    while [ -f "$progress_file" ]; do
+        tail -n 8 "$progress_file"
+        truncate -s 0 "$progress_file"
+        sleep 5
+    done &
 }
 
 [ -z "${NOMAD_META_REPO_NAME:-}" ] && fatal 400 "Missing required environment variable NOMAD_META_REPO_NAME"
@@ -25,8 +39,10 @@ git lfs --version
 git xet --version
 
 echo "[info] Fetching diffs for ${NOMAD_META_REF} from remote"
-git fetch origin "${NOMAD_META_REF}:${NOMAD_META_REF}"
+git fetch origin "${NOMAD_META_REF}:${NOMAD_META_REF}" 2>&1
 git show "${NOMAD_META_REF}" --name-only
 
+[ -n "${GIT_LFS_PROGRESS:-}" ] && progress "${GIT_LFS_PROGRESS}"
+
 echo "[info] Fetching LFS objects for ref ${NOMAD_META_REF}"
-git lfs fetch origin "${NOMAD_META_REF}"
+git lfs fetch origin "${NOMAD_META_REF}" 2>&1

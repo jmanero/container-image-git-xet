@@ -20,7 +20,7 @@ git xet --version
 [ -d "${NOMAD_META_REPO_NAME}" ] || mkdir "${NOMAD_META_REPO_NAME}"
 cd "${NOMAD_META_REPO_NAME}"
 
-[ $(git rev-parse --is-bare-repository) == "true" ] || git init --bare
+[ "$(git rev-parse --is-bare-repository)" == "true" ] || git init --bare
 
 echo "[info] Checking remote"
 if git remote get-url origin; then
@@ -32,4 +32,4 @@ else
 fi
 
 echo "[info] Fetching remote refs from ${NOMAD_META_REMOTE_URL}"
-git fetch origin
+git fetch origin 2>&1
