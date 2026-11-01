@@ -15,10 +15,13 @@ RUN microdnf install --assumeyes --nodocs --setopt install_weak_deps=0 git git-l
 
 COPY --from=xet git-xet /usr/local/bin
 COPY checkout init pull /usr/local/bin/
-RUN git xet install
+COPY gitconfig /etc/gitconfig
+
+## Add git-xet params to /etc/gitconfig
+RUN git xet install --system
 
 RUN mkdir -p /models
 WORKDIR /models
 
 ENV GIT_TERMINAL_PROMPT=0
-ENV HF_XET_CACHE=/models/.xet-cache
+ENV HF_XET_CACHE=/models/xet

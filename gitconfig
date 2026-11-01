@@ -1,0 +1,18 @@
+## Global git config for the git-xet image.
+##
+[http]
+	## HTTP/2 is disabled deliberately: git-lfs enables it by default
+	## (lfshttp/client.go configureProtocols), which multiplexes every concurrent
+	## LFS transfer onto a single TLS connection. Each multiplexed stream is then
+	## flow-control limited to roughly 64 KiB / RTT (about 2.4 MiB/s at a 26 ms RTT),
+	## so `lfs.concurrenttransfers = N` yields one connection's worth of bandwidth
+	## rather than N connections' worth. With HTTP/1.1 each transfer dials its own
+	## connection: 8 parallel object downloads measured 964 Mbit/s from the same
+	## CDN URLs that a multiplexed fetch was pulling at ~130 Mbit/s.
+	##
+	## Scope: applies to git-lfs transfers (LFS object download/upload). Git's own
+	## object fetches are small in comparison and unaffected by this setting.
+	version = HTTP/1.1
+
+[lfs]
+	concurrenttransfers = 8
