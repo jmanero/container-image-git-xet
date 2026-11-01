@@ -1,6 +1,16 @@
 #!/usr/bin/bash
 set -eo pipefail
 
+## checkout - Materialize one quantization from a bare cache into a working tree
+##  - REMOTE_ROOT: Path to the volume holding the bare repositories
+##  - REPO_NAME: Repository name; the bare repo is ${REMOTE_ROOT}/${REPO_NAME}
+##  - MODEL_QUANT: Quantization directory to materialize, e.g. UD-IQ2_M
+##  - REPO_REF  [optional]: Branch, tag or sha to check out (default: origin/HEAD)
+##  - GIT_LFS_PROGRESS  [optional]: Absolute path to log LFS progress to; sampled to stdout
+##
+## The working tree is created at ./${REPO_NAME}, under the image's WORKDIR (/models),
+## and LFS objects are read from ${REMOTE_ROOT}/${REPO_NAME}/lfs, so that volume must
+## be mounted read-write.
 
 function fatal() {
     echo "[fatal $1] $2" >&2
@@ -65,4 +75,5 @@ fi
 [ -n "${GIT_LFS_PROGRESS:-}" ] && progress "${GIT_LFS_PROGRESS}"
 
 echo "[info] Fetching LFS objects for quant ${MODEL_QUANT}"
+git lfs pull --include "${MODEL_QUANT}/*" --dry-run 2>&1
 git lfs pull --include "${MODEL_QUANT}/*" 2>&1

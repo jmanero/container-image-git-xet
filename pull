@@ -27,6 +27,10 @@ function progress() {
 [ -z "${NOMAD_META_REPO_NAME:-}" ] && fatal 400 "Missing required environment variable NOMAD_META_REPO_NAME"
 [ -d "${NOMAD_META_REPO_NAME}" ]   || fatal 404 "Repository at ${NOMAD_META_REPO_NAME} does not exist"
 
+git --version
+git lfs --version
+git xet --version
+
 cd "${NOMAD_META_REPO_NAME}"
 
 if [ -z "${NOMAD_META_REF:-}" ]; then
@@ -34,9 +38,8 @@ if [ -z "${NOMAD_META_REF:-}" ]; then
     echo "[info] Using remote ref origin/HEAD -> $NOMAD_META_REF"
 fi
 
-git --version
-git lfs --version
-git xet --version
+## Set our own HEAD reference so that repos using us as a remote can resolve origin/HEAD
+git symbolic-ref HEAD "refs/heads/${NOMAD_META_REF}"
 
 echo "[info] Fetching diffs for ${NOMAD_META_REF} from remote"
 git fetch origin "${NOMAD_META_REF}:${NOMAD_META_REF}" 2>&1
