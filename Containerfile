@@ -14,7 +14,7 @@ RUN microdnf install --assumeyes --nodocs --setopt install_weak_deps=0 git git-l
 
 
 COPY --from=xet git-xet /usr/local/bin
-COPY init pull /usr/local/bin/
+COPY checkout init pull /usr/local/bin/
 RUN git xet install
 
 RUN mkdir -p /models

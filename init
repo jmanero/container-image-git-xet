@@ -17,7 +17,7 @@ git --version
 git lfs --version
 git xet --version
 
-[ -d "${NOMAD_META_REPO_NAME}" ] || mkdir "${NOMAD_META_REPO_NAME}"
+[ -d "${NOMAD_META_REPO_NAME}" ] || mkdir -p "${NOMAD_META_REPO_NAME}"
 cd "${NOMAD_META_REPO_NAME}"
 
 [ "$(git rev-parse --is-bare-repository)" == "true" ] || git init --bare
