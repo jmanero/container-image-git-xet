@@ -2,78 +2,62 @@
 set -eo pipefail
 
 ## checkout - Materialize one quantization from a bare cache into a working tree
-##  - REMOTE_ROOT: Path to the volume holding the bare repositories
-##  - REPO_NAME: Repository name; the bare repo is ${REMOTE_ROOT}/${REPO_NAME}
-##  - MODEL_QUANT: Quantization directory to materialize, e.g. UD-IQ2_M
-##  - REPO_REF  [optional]: Branch, tag or sha to check out (default: origin/HEAD)
+##  - REMOTE_ROOT: Path to the volume holding bare repositories
+##  - NOMAD_META_REPO: Repository name; the bare repo is ${REMOTE_ROOT}/${NOMAD_META_REPO}
+##  - NOMAD_META_QUANT: Quantization directory to materialize, e.g. UD-IQ2_M
+##  - NOMAD_META_REF  [optional]: Branch, tag or sha to check out (default: origin/HEAD)
 ##  - GIT_LFS_PROGRESS  [optional]: Absolute path to log LFS progress to; sampled to stdout
 ##
-## The working tree is created at ./${REPO_NAME}, under the image's WORKDIR (/models),
-## and LFS objects are read from ${REMOTE_ROOT}/${REPO_NAME}/lfs, so that volume must
+## The working tree is created at ./${NOMAD_META_REPO}, under the image's WORKDIR (/models),
+## and LFS objects are read from ${REMOTE_ROOT}/${NOMAD_META_REPO}/lfs, so that volume must
 ## be mounted read-write.
+source /usr/share/git-xet/common.sh
 
-function fatal() {
-    echo "[fatal $1] $2" >&2
-    exit $1
-}
-
-function progress() {
-    progress_file="$1"
-
-    truncate -s 0 "$progress_file"
-    trap 'rm -f -- "$progress_file"' EXIT
-
-    ## Periodically tail and truncate the progress file
-    while [ -f "$progress_file" ]; do
-        tail -n 8 "$progress_file"
-        truncate -s 0 "$progress_file"
-        sleep 5
-    done &
-}
-
-[ -z "${REMOTE_ROOT:-}" ] && fatal 400 "Missing required environment variable REMOTE_ROOT"
-[ -z "${REPO_NAME:-}" ]   && fatal 400 "Missing required environment variable REPO_NAME"
-[ -z "${MODEL_QUANT:-}" ] && fatal 400 "Missing required environment variable MODEL_QUANT"
+[ -z "${REMOTE_ROOT:-}" ]            && fatal 400 "Missing required environment variable REMOTE_ROOT"
+[ -z "${NOMAD_META_REPO:-}" ]   && fatal 400 "Missing required environment variable NOMAD_META_REPO"
+[ -z "${NOMAD_META_QUANT:-}" ] && fatal 400 "Missing required environment variable NOMAD_META_QUANT"
 
 git --version
 git lfs --version
 git xet --version
 
-[ -d "${REPO_NAME}" ] || mkdir -p "${REPO_NAME}"
-cd "${REPO_NAME}"
+[ -d "${NOMAD_META_REPO}" ] || mkdir -p "${NOMAD_META_REPO}"
+cd "${NOMAD_META_REPO}"
 
-[ "$(git rev-parse  --is-inside-work-tree 2>/dev/null)" == "true" ] || git init
+[ "$(git rev-parse --is-inside-work-tree 2>/dev/null)" == "true" ] || git init
 
 echo "[info] Checking remote"
 if git remote get-url origin 2>/dev/null; then
-    echo "[info] Setting remote URL to ${REMOTE_ROOT}/${REPO_NAME}"
-    git remote set-url origin "${REMOTE_ROOT}/${REPO_NAME}"
+    echo "[info] Setting remote URL to ${REMOTE_ROOT}/${NOMAD_META_REPO}"
+    git remote set-url origin "${REMOTE_ROOT}/${NOMAD_META_REPO}"
 else
-    echo "[info] Adding remote at ${REMOTE_ROOT}/${REPO_NAME}"
-    git remote add origin "${REMOTE_ROOT}/${REPO_NAME}"
+    echo "[info] Adding remote at ${REMOTE_ROOT}/${NOMAD_META_REPO}"
+    git remote add origin "${REMOTE_ROOT}/${NOMAD_META_REPO}"
 fi
 
-git config set lfs.storage "${REMOTE_ROOT}/${REPO_NAME}/lfs"
+## Copy LFS objects directly from the bare remote to the worktree instead of copying to .git/lfs/objects then the worktree
+git config set lfs.storage "${REMOTE_ROOT}/${NOMAD_META_REPO}/lfs"
 
-echo "[info] Fetching remote refs from ${REMOTE_ROOT}/${REPO_NAME}"
+echo "[info] Fetching remote refs from ${REMOTE_ROOT}/${NOMAD_META_REPO}"
 git fetch origin 2>&1
 
-if [ -z "${REPO_REF:-}" ]; then
-    REPO_REF=$(git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|^origin/||')
-    echo "[info] Using remote ref origin/HEAD -> $REPO_REF"
+if [ -z "${NOMAD_META_REF:-}" ]; then
+    NOMAD_META_REF=$(git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|^origin/||')
+    echo "[info] Using remote ref origin/HEAD -> $NOMAD_META_REF"
 fi
 
-if git rev-parse --verify --quiet "origin/${REPO_REF}" >/dev/null; then
+if git rev-parse --verify --quiet "origin/${NOMAD_META_REF}" >/dev/null; then
     ## Check out a branch, fast-forward to updated remote HEAD
-    GIT_LFS_SKIP_SMUDGE=1 git checkout -f -B "${REPO_REF}" "origin/${REPO_REF}"
+    GIT_LFS_SKIP_SMUDGE=1 git checkout -f -B "${NOMAD_META_REF}" "origin/${NOMAD_META_REF}"
 else
     ## Checkout a tag or sha
-    GIT_LFS_SKIP_SMUDGE=1 git checkout -f --detach "${REPO_REF}"
+    GIT_LFS_SKIP_SMUDGE=1 git checkout -f --detach "${NOMAD_META_REF}"
 fi
 
-[ -f "${MODEL_QUANT}"/*-00001-of-*.gguf ] || fatal 404 "Model does not appear to contain weights for quantization ${MODEL_QUANT}"
-[ -n "${GIT_LFS_PROGRESS:-}" ] && progress "${GIT_LFS_PROGRESS}"
+compgen -G "${NOMAD_META_QUANT}/*.gguf" >/dev/null || fatal 404 "Model does not appear to contain weights for quantization ${NOMAD_META_QUANT}"
 
-echo "[info] Fetching LFS objects for quant ${MODEL_QUANT}"
-git lfs pull --include "${MODEL_QUANT}/*" --dry-run 2>&1
-git lfs pull --include "${MODEL_QUANT}/*" 2>&1
+trap cleanup EXIT
+[ -n "${GIT_LFS_PROGRESS:-}" ] && progress
+
+echo "[info] Fetching LFS objects for quant ${NOMAD_META_QUANT}"
+git lfs pull --include "${NOMAD_META_QUANT}/*" 2>&1

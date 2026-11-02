@@ -3,27 +3,23 @@ set -eo pipefail
 
 ## init - Setup a new local git repository with an origin remote
 ##  - NOMAD_META_REMOTE_URL: Remote git repository URL
-##  - NOMAD_META_REPO_NAME: Local repository path
-
-function fatal() {
-    echo "[fatal $1] $2" >&2
-    exit $1
-}
+##  - NOMAD_META_REPO: Local repository path
+source /usr/share/git-xet/common.sh
 
 [ -z "${NOMAD_META_REMOTE_URL:-}" ] && fatal 400 "Missing required environment variable NOMAD_META_REMOTE_URL"
-[ -z "${NOMAD_META_REPO_NAME:-}" ]  && fatal 400 "Missing required environment variable NOMAD_META_REPO_NAME"
+[ -z "${NOMAD_META_REPO:-}" ]  && fatal 400 "Missing required environment variable NOMAD_META_REPO"
 
 git --version
 git lfs --version
 git xet --version
 
-[ -d "${NOMAD_META_REPO_NAME}" ] || mkdir -p "${NOMAD_META_REPO_NAME}"
-cd "${NOMAD_META_REPO_NAME}"
+[ -d "${NOMAD_META_REPO}" ] || mkdir -p "${NOMAD_META_REPO}"
+cd "${NOMAD_META_REPO}"
 
-[ "$(git rev-parse --is-bare-repository)" == "true" ] || git init --bare
+[ "$(git rev-parse --is-bare-repository 2>/dev/null)" == "true" ] || git init --bare
 
 echo "[info] Checking remote"
-if git remote get-url origin; then
+if git remote get-url origin &>/dev/null; then
     echo "[info] Setting remote URL to ${NOMAD_META_REMOTE_URL}"
     git remote set-url origin "${NOMAD_META_REMOTE_URL}"
 else

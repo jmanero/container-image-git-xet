@@ -15,9 +15,11 @@ RUN microdnf install --assumeyes --nodocs --setopt install_weak_deps=0 git git-l
 
 COPY --from=xet git-xet /usr/local/bin
 COPY checkout init pull /usr/local/bin/
+COPY common.sh /usr/share/git-xet/
 COPY gitconfig /etc/gitconfig
 
-## Add git-xet params to /etc/gitconfig
+## Add git-lfs and git-xet params to /etc/gitconfig
+RUN git lfs install --system
 RUN git xet install --system
 
 RUN mkdir -p /models

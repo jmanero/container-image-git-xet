@@ -2,50 +2,35 @@
 set -eo pipefail
 
 ## pull - Fetch a remote ref to the local bare repository
-##  - NOMAD_META_REPO_NAME: Local repository path
+##  - NOMAD_META_REPO: Local repository path
 ##  - NOMAD_META_REF  [optional]: Reference to fetch into the local repository
+source /usr/share/git-xet/common.sh
 
-function fatal() {
-    echo "[fatal $1] $2" >&2
-    exit $1
-}
-
-function progress() {
-    progress_file="$1"
-
-    truncate -s 0 "$progress_file"
-    trap 'rm -f -- "$progress_file"' EXIT
-
-    ## Periodically tail and truncate the progress file
-    while [ -f "$progress_file" ]; do
-        tail -n 8 "$progress_file"
-        truncate -s 0 "$progress_file"
-        sleep 5
-    done &
-}
-
-[ -z "${NOMAD_META_REPO_NAME:-}" ] && fatal 400 "Missing required environment variable NOMAD_META_REPO_NAME"
-[ -d "${NOMAD_META_REPO_NAME}" ]   || fatal 404 "Repository at ${NOMAD_META_REPO_NAME} does not exist"
+[ -z "${NOMAD_META_REPO:-}" ] && fatal 400 "Missing required environment variable NOMAD_META_REPO"
+[ -d "${NOMAD_META_REPO}" ]   || fatal 404 "Repository at ${NOMAD_META_REPO} does not exist"
 
 git --version
 git lfs --version
 git xet --version
 
-cd "${NOMAD_META_REPO_NAME}"
+cd "${NOMAD_META_REPO}"
 
 if [ -z "${NOMAD_META_REF:-}" ]; then
     NOMAD_META_REF=$(git symbolic-ref --short refs/remotes/origin/HEAD | sed 's|^origin/||')
     echo "[info] Using remote ref origin/HEAD -> $NOMAD_META_REF"
 fi
 
-## Set our own HEAD reference so that repos using us as a remote can resolve origin/HEAD
-git symbolic-ref HEAD "refs/heads/${NOMAD_META_REF}"
+## Point HEAD at a real branch so that repos using us as a remote can resolve origin/HEAD. A tag or a sha should not be HEAD
+if git rev-parse --verify --quiet "refs/remotes/origin/${NOMAD_META_REF}" >/dev/null; then
+    git symbolic-ref HEAD "refs/heads/${NOMAD_META_REF}"
+fi
 
 echo "[info] Fetching diffs for ${NOMAD_META_REF} from remote"
 git fetch origin "${NOMAD_META_REF}:${NOMAD_META_REF}" 2>&1
 git show "${NOMAD_META_REF}" --name-only
 
-[ -n "${GIT_LFS_PROGRESS:-}" ] && progress "${GIT_LFS_PROGRESS}"
+trap cleanup EXIT
+[ -n "${GIT_LFS_PROGRESS:-}" ] && progress
 
 echo "[info] Fetching LFS objects for ref ${NOMAD_META_REF}"
 git lfs fetch origin "${NOMAD_META_REF}" 2>&1
