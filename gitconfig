@@ -2,3 +2,6 @@
 ##
 [lfs]
 	concurrenttransfers = 8
+
+[advice]
+	defaultBranchName = false

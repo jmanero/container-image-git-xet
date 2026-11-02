@@ -22,7 +22,7 @@ fi
 
 ## Point HEAD at a real branch so that repos using us as a remote can resolve origin/HEAD. A tag or a sha should not be HEAD
 if git rev-parse --verify --quiet "refs/remotes/origin/${NOMAD_META_REF}" >/dev/null; then
-    git symbolic-ref HEAD "refs/heads/${NOMAD_META_REF}"
+    git symbolic-ref HEAD "refs/heads/${NOMAD_META_REF}" 2>&1
 fi
 
 echo "[info] Fetching diffs for ${NOMAD_META_REF} from remote"

@@ -54,10 +54,30 @@ else
     GIT_LFS_SKIP_SMUDGE=1 git checkout -f --detach "${NOMAD_META_REF}"
 fi
 
-compgen -G "${NOMAD_META_QUANT}/*.gguf" >/dev/null || fatal 404 "Model does not appear to contain weights for quantization ${NOMAD_META_QUANT}"
+[ -d "${NOMAD_META_QUANT}" ] || fatal 404 "Model repository does not contain quantization ${NOMAD_META_QUANT}"
 
 trap cleanup EXIT
 [ -n "${GIT_LFS_PROGRESS:-}" ] && progress
 
 echo "[info] Fetching LFS objects for quant ${NOMAD_META_QUANT}"
 git lfs pull --include "${NOMAD_META_QUANT}/*" 2>&1
+
+if [ -z "${NOMAD_META_MODEL_FILE:-}" ]; then
+    ## Try to find a file matching 00001-of-DDDDD.gguf convention
+    NOMAD_META_MODEL_FILE=$(find "${NOMAD_META_QUANT}" -regextype sed -iregex '.*00001-of-[0-9]\{5\}\.gguf' | sort | head -1)
+fi
+if [ -z "${NOMAD_META_MODEL_FILE:-}" ]; then
+    ## Fall back to a single GGUF file. Doesn't handle multiple non-conventionally named GGUF files. Caller
+    ## must set NOMAD_META_MODEL_FILE to handle non-standard cases
+    NOMAD_META_MODEL_FILE=$(find "${NOMAD_META_QUANT}" -iname '*.gguf' | sort | head -1)
+fi
+
+[ -z "${NOMAD_META_MODEL_FILE:-}" ] && fatal 404 "Unable to find GGUF files for ${NOMAD_META_REPO}:${NOMAD_META_QUANT}"
+
+echo "[info] Using file ${NOMAD_META_MODEL_FILE} as quantization entrypoint"
+echo "[info] Writing params file for ${NOMAD_META_QUANT}"
+cat >"${NOMAD_META_QUANT}/params.ini" << EOF
+[${NOMAD_META_REPO}:${NOMAD_META_QUANT}]
+model = $(pwd)/${NOMAD_META_MODEL_FILE}
+
+EOF
