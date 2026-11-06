@@ -26,3 +26,18 @@ function progress() {
         sleep 5
     done &
 }
+
+function set_remote_url() {
+    local remote=$1; shift
+    local url=$1; shift
+
+    echo "[info] Checking remote '${remote}'"
+    if git remote get-url "${remote}" &>/dev/null; then
+        echo "[info] Setting remote '${remote}' to ${url}"
+        git remote set-url "${remote}" "${url}"
+    else
+        echo "[info] Adding remote '${remote}' at ${url}"
+        git remote add "${remote}" "${url}"
+fi
+
+}

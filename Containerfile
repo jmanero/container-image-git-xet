@@ -1,4 +1,4 @@
-FROM quay.io/fedora/fedora AS xet
+FROM quay.io/fedora/fedora:44 AS xet
 
 RUN dnf install --assumeyes unzip
 
@@ -7,7 +7,7 @@ RUN curl -sSL "https://github.com/huggingface/xet-core/releases/download/git-xet
 RUN unzip git-xet.zip
 RUN chmod +x git-xet
 
-FROM quay.io/fedora/fedora-minimal
+FROM quay.io/fedora/fedora-minimal:44
 
 RUN microdnf install --assumeyes --nodocs --setopt install_weak_deps=0 git git-lfs && \
     microdnf clean all -y

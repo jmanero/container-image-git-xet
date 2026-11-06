@@ -18,14 +18,7 @@ cd "${NOMAD_META_REPO}"
 
 [ "$(git rev-parse --is-bare-repository 2>/dev/null)" == "true" ] || git init --bare
 
-echo "[info] Checking remote"
-if git remote get-url origin &>/dev/null; then
-    echo "[info] Setting remote URL to ${NOMAD_META_REMOTE_URL}"
-    git remote set-url origin "${NOMAD_META_REMOTE_URL}"
-else
-    echo "[info] Adding remote at ${NOMAD_META_REMOTE_URL}"
-    git remote add origin "${NOMAD_META_REMOTE_URL}"
-fi
+set_remote_url "origin" "${NOMAD_META_REMOTE_URL}"
 
 echo "[info] Fetching remote refs from ${NOMAD_META_REMOTE_URL}"
 git fetch origin 2>&1
